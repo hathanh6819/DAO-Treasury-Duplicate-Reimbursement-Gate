@@ -1,5 +1,9 @@
 # Scope and adversarial audit specification
 
+## Version 2 reassessment invariant
+
+For every unconsumed claim `C` with status `CLEAR`, submission of a later claim with the same normalized DAO and vendor identity atomically makes `C` non-consumable, increments `C.revision`, and adds the later claim to `C.reassessment_scope`. `C` may return to `CLEAR` only after validator comparison covers every same-identity claim absent from `C.compared_ids`. Claims submitted during an open reassessment extend the scope and invalidate the earlier expected revision. Consumed claims and claims for other vendors are never reopened.
+
 ## Claim
 
 `CLEAR` means no material overlap was found against the complete bounded set of previously DAO-sealed obligations for the same DAO/vendor. `DUPLICATE` means at least one per-prior finding reports material overlap or same work in the same period. `UNRESOLVED` means the semantic judgment cannot be safely established.
@@ -19,7 +23,7 @@
 3. Model omits a prior ID, adds an ID, duplicates one, returns a string boolean or says coverage incomplete → `UNRESOLVED`.
 4. Authority or outsider tries controller consume → unchanged state.
 5. Controller supplies wrong digest, expired revision or repeats a consumed authorization → unchanged state.
-6. A new same-vendor claim appears after `CLEAR` but before consume → old authorization cannot be consumed.
+6. A new same-vendor claim appears after `CLEAR` but before consume → old authorization is atomically reopened and cannot be consumed until every new relevant claim is assessed.
 7. More than eight same-vendor claims → new submission fails closed; no silent comparison truncation.
 
 ## Live evidence requirement

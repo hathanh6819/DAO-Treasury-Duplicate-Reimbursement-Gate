@@ -69,9 +69,24 @@ class DAOTreasuryDuplicateReimbursementGate(gl.Contract):
             if old["dao"]==dao and old["vendor_id"]==vendor:relevant+=1
         if relevant>MAX_COMPARE:return "COMPARISON_LIMIT_FAIL_CLOSED"
         claim_id=u256(int(self.claim_count)+1);self.claim_count=claim_id
-        fields={"id":int(claim_id),"dao":dao,"vendor_id":vendor,"beneficiary":beneficiary_hex,"token":token_hex,"amount":int(amount),"period_start":int(period_start),"period_end":int(period_end),"invoice_digest":invoice,"work_summary":work_summary,"action_digest":action,"expiry":now()+int(expiry_seconds),"revision":1,"status":PENDING,"reason":"NOT_ASSESSED","evidence_digest":"","compared_ids":[],"consumed":False,"consumed_at":0}
+        fields={"id":int(claim_id),"dao":dao,"vendor_id":vendor,"beneficiary":beneficiary_hex,"token":token_hex,"amount":int(amount),"period_start":int(period_start),"period_end":int(period_end),"invoice_digest":invoice,"work_summary":work_summary,"action_digest":action,"expiry":now()+int(expiry_seconds),"revision":1,"status":PENDING,"reason":"NOT_ASSESSED","evidence_digest":"","compared_ids":[],"assessment_mode":"INITIAL","reassessment_scope":[],"consumed":False,"consumed_at":0}
         fields["claim_digest"]=digest({k:fields[k] for k in ("dao","vendor_id","beneficiary","token","amount","period_start","period_end","invoice_digest","work_summary","action_digest")})
-        self.claims[claim_id]=canon(fields);return claim_id
+        self.claims[claim_id]=canon(fields)
+        # A newer same-DAO/vendor claim immediately invalidates every older,
+        # unconsumed CLEAR snapshot. Reopening is atomic with submission, so a
+        # controller cannot consume stale authorization in an intervening tx.
+        for i in range(1,int(claim_id)):
+            old=json.loads(self.claims[u256(i)])
+            reopening=old["status"]==CLEAR or (old["status"]==PENDING and old.get("assessment_mode")=="REASSESSMENT")
+            if old["dao"]==dao and old["vendor_id"]==vendor and reopening and not old["consumed"]:
+                scope=list(old.get("reassessment_scope",[]))
+                if int(claim_id) not in scope:scope.append(int(claim_id))
+                old["revision"]+=1;old["status"]=PENDING
+                old["reason"]="NEW_RELEVANT_CLAIM_REQUIRES_REASSESSMENT"
+                old["assessment_mode"]="REASSESSMENT";old["reassessment_scope"]=sorted(scope)
+                old["evidence_digest"]=""
+                self.claims[u256(i)]=canon(old)
+        return claim_id
     @gl.public.write
     def assess_claim(self,claim_id:u256,expected_revision:u256)->str:
         claim=self._claim(claim_id)
@@ -79,10 +94,21 @@ class DAOTreasuryDuplicateReimbursementGate(gl.Contract):
         if claim["revision"]!=int(expected_revision):return "STALE_REVISION"
         if claim["status"]!=PENDING:return "ASSESSMENT_CLOSED"
         if now()>claim["expiry"]:return "CLAIM_EXPIRED"
+        mode=claim.get("assessment_mode","INITIAL")
         prior=[]
-        for i in range(1,int(claim_id)):
-            x=json.loads(self.claims[u256(i)])
-            if x["dao"]==claim["dao"] and x["vendor_id"]==claim["vendor_id"]:prior.append(x)
+        if mode=="REASSESSMENT":
+            # Recompute from storage rather than trusting the recorded scope:
+            # this absorbs every relevant claim submitted before execution.
+            compared=set(claim["compared_ids"])
+            for i in range(1,int(self.claim_count)+1):
+                if i==int(claim_id) or i in compared:continue
+                x=json.loads(self.claims[u256(i)])
+                if x["dao"]==claim["dao"] and x["vendor_id"]==claim["vendor_id"]:prior.append(x)
+            if not prior:return "NO_NEW_RELEVANT_CLAIMS"
+        else:
+            for i in range(1,int(claim_id)):
+                x=json.loads(self.claims[u256(i)])
+                if x["dao"]==claim["dao"] and x["vendor_id"]==claim["vendor_id"]:prior.append(x)
         if len(prior)>MAX_COMPARE:return "COMPARISON_LIMIT_FAIL_CLOSED"
         prior_ids=[x["id"] for x in prior]
         def evaluate():
@@ -97,9 +123,12 @@ class DAOTreasuryDuplicateReimbursementGate(gl.Contract):
         if v.get("kind") not in (CLEAR,DUPLICATE,UNRESOLVED):v={"kind":UNRESOLVED,"reason":"CONSENSUS_INVALID","findings":[]}
         claim["status"]=v["kind"];claim["reason"]=str(v["reason"])[:80]
         if v["kind"]!=UNRESOLVED:
-            claim["compared_ids"]=prior_ids
+            claim["compared_ids"]=sorted(set(claim["compared_ids"]+prior_ids))
+            claim["assessment_mode"]="COMPLETE";claim["reassessment_scope"]=[]
             claim["evidence_digest"]=digest({"claim_id":claim["id"],"claim_digest":claim["claim_digest"],"prior":[{"id":x["id"],"claim_digest":x["claim_digest"],"status":x["status"],"consumed":x["consumed"]} for x in prior],"findings":v["findings"],"verdict":v["kind"]})
-        else:claim["evidence_digest"]=""
+        else:
+            claim["evidence_digest"]=""
+            if mode=="REASSESSMENT":claim["assessment_mode"]="REASSESSMENT";claim["reassessment_scope"]=prior_ids
         self.claims[claim_id]=canon(claim);return claim["status"]
     @gl.public.write
     def retry_unresolved(self,claim_id:u256,expected_revision:u256)->str:
@@ -125,7 +154,7 @@ class DAOTreasuryDuplicateReimbursementGate(gl.Contract):
             if x["dao"]==claim["dao"] and x["vendor_id"]==claim["vendor_id"] and i not in claim["compared_ids"]:return "NEW_RELEVANT_CLAIM_REQUIRES_REASSESSMENT"
         claim["consumed"]=True;claim["consumed_at"]=now();self.claims[claim_id]=canon(claim);return "AUTHORIZATION_CONSUMED"
     @gl.public.view
-    def get_protocol(self)->dict:return {"name":"DAOTreasuryDuplicateReimbursementGate","version":1,"authority":self.authority,"controller":self.controller,"custody":False,"scope":"DAO-sealed reimbursement obligations, not external invoice authenticity or actual Safe execution"}
+    def get_protocol(self)->dict:return {"name":"DAOTreasuryDuplicateReimbursementGate","version":2,"authority":self.authority,"controller":self.controller,"custody":False,"scope":"DAO-sealed reimbursement obligations, not external invoice authenticity or actual Safe execution"}
     @gl.public.view
     def get_count(self)->int:return int(self.claim_count)
     @gl.public.view

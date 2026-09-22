@@ -73,10 +73,63 @@ def test_exact_invoice_replay_and_bad_input(direct_deploy,direct_vm):
 def test_new_relevant_claim_stales_clear_result(direct_deploy,direct_vm):
     c=deploy(direct_deploy);first(c,direct_vm);submit(c,direct_vm,args(SUMMARY3,D2))
     model(direct_vm,2,[1],duplicate=False);assert c.assess_claim(2,1)=="CLEAR"
-    submit(c,direct_vm,args(SUMMARY2,"sha256:"+"d"*64))
-    before=c.get_claim(2)
-    with direct_vm.prank(B):assert c.consume_authorization(2,2,ACTION)=="NEW_RELEVANT_CLAIM_REQUIRES_REASSESSMENT"
-    assert c.get_claim(2)==before
+    assert submit(c,direct_vm,args(SUMMARY2,"sha256:"+"d"*64))==3
+    stale=c.get_claim(2)
+    assert stale["status"]=="PENDING" and stale["revision"]==3
+    assert stale["reason"]=="NEW_RELEVANT_CLAIM_REQUIRES_REASSESSMENT"
+    assert stale["assessment_mode"]=="REASSESSMENT" and stale["reassessment_scope"]==[3]
+    with direct_vm.prank(B):assert c.consume_authorization(2,3,ACTION)=="NOT_AUTHORIZED"
+    direct_vm.clear_mocks()
+    model(direct_vm,2,[3],duplicate=False)
+    assert c.assess_claim(2,3)=="CLEAR"
+    refreshed=c.get_claim(2)
+    assert refreshed["revision"]==4 and refreshed["compared_ids"]==[1,3]
+    with direct_vm.prank(B):assert c.consume_authorization(2,4,ACTION)=="AUTHORIZATION_CONSUMED"
+
+def test_reassessment_can_revoke_previously_clear_claim(direct_deploy,direct_vm):
+    c=deploy(direct_deploy);first(c,direct_vm)
+    assert submit(c,direct_vm,args(SUMMARY2,D2))==2
+    reopened=c.get_claim(1)
+    assert reopened["status"]=="PENDING" and reopened["revision"]==3
+    model(direct_vm,1,[2],duplicate=True)
+    assert c.assess_claim(1,3)=="DUPLICATE"
+    revoked=c.get_claim(1)
+    assert revoked["revision"]==4 and revoked["compared_ids"]==[2]
+    with direct_vm.prank(B):assert c.consume_authorization(1,4,ACTION)=="NOT_AUTHORIZED"
+
+def test_reassessment_absorbs_every_new_claim_before_execution(direct_deploy,direct_vm):
+    c=deploy(direct_deploy);first(c,direct_vm)
+    assert submit(c,direct_vm,args(SUMMARY3,D2))==2
+    assert submit(c,direct_vm,args(SUMMARY2,"sha256:"+"d"*64))==3
+    reopened=c.get_claim(1)
+    assert reopened["reassessment_scope"]==[2,3] and reopened["revision"]==4
+    model(direct_vm,1,[2,3],duplicate=False)
+    assert c.assess_claim(1,3)=="STALE_REVISION"
+    assert c.assess_claim(1,4)=="CLEAR"
+    assert c.get_claim(1)["compared_ids"]==[2,3]
+
+def test_unresolved_reassessment_retries_same_scope(direct_deploy,direct_vm):
+    c=deploy(direct_deploy);first(c,direct_vm);submit(c,direct_vm,args(SUMMARY2,D2))
+    model(direct_vm,1,[2],all_relevant_records_considered=False)
+    assert c.assess_claim(1,3)=="UNRESOLVED"
+    assert c.get_claim(1)["assessment_mode"]=="REASSESSMENT"
+    assert c.retry_unresolved(1,4)=="PENDING"
+    direct_vm.clear_mocks();model(direct_vm,1,[2],duplicate=False)
+    assert c.assess_claim(1,4)=="CLEAR"
+    assert c.get_claim(1)["compared_ids"]==[2]
+
+def test_consumed_clear_claim_is_never_reopened(direct_deploy,direct_vm):
+    c=deploy(direct_deploy);first(c,direct_vm)
+    with direct_vm.prank(B):assert c.consume_authorization(1,2,ACTION)=="AUTHORIZATION_CONSUMED"
+    before=c.get_claim(1)
+    assert submit(c,direct_vm,args(SUMMARY2,D2))==2
+    assert c.get_claim(1)==before
+
+def test_unrelated_vendor_does_not_reopen_clear_claim(direct_deploy,direct_vm):
+    c=deploy(direct_deploy);first(c,direct_vm);before=c.get_claim(1)
+    unrelated=args(SUMMARY2,D2);unrelated[1]="VENDOR-OTHER"
+    assert submit(c,direct_vm,unrelated)==2
+    assert c.get_claim(1)==before
 def test_changed_token_and_period_still_compared(direct_deploy,direct_vm):
     c=deploy(direct_deploy);first(c,direct_vm)
     new=args(SUMMARY2,D2,1785542400,1788220800)

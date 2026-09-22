@@ -1,4 +1,6 @@
-# Studionet evidence
+# Historical version 1 Studionet evidence
+
+> This deployment predates the reviewer-requested stale-claim reassessment fix. It remains useful as historical lifecycle evidence, but it must not be cited as proof of version 2. Current deployment requirements and the unfinished live matrix are in [Studio Next version 2 evidence](studio-next-v2-evidence.md).
 
 Synthetic lifecycle verified on 2026-09-15 against [`0x8B1c24CA1340aCdC37008A665b9B332E74cD0183`](https://explorer-studio.genlayer.com/address/0x8B1c24CA1340aCdC37008A665b9B332E74cD0183). Initial readback bound wallet A as DAO authority, wallet B as treasury controller, custody false, version 1 and count 0.
 
