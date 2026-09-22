@@ -1,12 +1,12 @@
-# Studio Next version 2 evidence
+# Studionet version 2 evidence
 
 Status: **awaiting deployment and live lifecycle**.
 
-This page is intentionally not presented as completed evidence. It defines the exact live matrix required to prove that the deployed bytecode matches the reviewer fix. Replace each `PENDING` value only after the corresponding finalized Studio Next transaction and authoritative readback exist.
+This page is intentionally not presented as completed evidence. It defines the exact live matrix required to prove that the deployed bytecode matches the reviewer fix. Replace each `PENDING` value only after the corresponding finalized Studionet transaction and authoritative readback exist.
 
 ## Deployment
 
-- Network: Studio Next, chain ID `61997`
+- Network: Studionet
 - Contract address: `PENDING`
 - Explorer: `PENDING`
 - Source SHA-256: `a62ec2336f80239778ed5ab9dc29029f526faeed3fc09b393cd8d6d939b5e4ee`
@@ -27,5 +27,4 @@ This page is intentionally not presented as completed evidence. It defines the e
 | Separate duplicate scenario | `PENDING` | A previously clear, unconsumed claim is reopened and reassessed to `DUPLICATE`, so consume is rejected |
 | Multi-arrival scenario | `PENDING` | A second newer claim extends scope and increments revision; assessment with the earlier revision fails |
 
-All links must point directly to Studio Next explorer transactions or the deployed contract. Synthetic claims only; this contract does not hold or transfer funds.
-
+All links must point directly to Studionet explorer transactions or the deployed contract. Synthetic claims only; this contract does not hold or transfer funds.

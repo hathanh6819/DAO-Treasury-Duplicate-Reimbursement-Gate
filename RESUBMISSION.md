@@ -54,5 +54,4 @@ a62ec2336f80239778ed5ab9dc29029f526faeed3fc09b393cd8d6d939b5e4ee
 
 ## Deployment evidence
 
-The original version 1 deployment is historical evidence only and does not prove this fix. The matching version 2 source must be deployed on Studio Next, chain ID `61997`, and the live transaction matrix in [`docs/studio-next-v2-evidence.md`](docs/studio-next-v2-evidence.md) must be completed before resubmission.
-
+The original version 1 deployment is historical evidence only and does not prove this fix. The matching version 2 source must be deployed on Studionet, and the live transaction matrix in [`docs/studionet-v2-evidence.md`](docs/studionet-v2-evidence.md) must be completed before resubmission.

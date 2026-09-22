@@ -2,7 +2,7 @@
 
 A contract-only GenLayer gate for one narrow treasury problem: the same DAO vendor billing substantially the same work twice under changed invoice numbers, wording, payment token, beneficiary, amount or service period.
 
-The original v1 Studionet deployment is documented in [historical live evidence](docs/studionet-evidence.md). Version 2 adds mandatory reassessment of previously `CLEAR`, unconsumed claims. A fresh Studio Next deployment and v2 live evidence are required before resubmission.
+The original v1 Studionet deployment is documented in [historical live evidence](docs/studionet-evidence.md). Version 2 adds mandatory reassessment of previously `CLEAR`, unconsumed claims. A fresh Studionet deployment and v2 live evidence are required before resubmission.
 
 For a reviewer-focused description of the defect, fix, automated proof and outstanding live evidence, see [RESUBMISSION.md](RESUBMISSION.md).
 
@@ -30,7 +30,7 @@ Run `python scripts/verify_local.py`. The local gate currently passes 21 tests p
 
 ## Deployment
 
-Deploy `contracts/dao_treasury_duplicate_reimbursement_gate.py` on Studio Next (chain ID `61997`) with exactly two constructor arguments:
+Deploy `contracts/dao_treasury_duplicate_reimbursement_gate.py` on Studionet with exactly two constructor arguments:
 
 1. `dao_authority`: test wallet A (`0x1D283b45974B0be9630DFD1deC6A62a9B72B2760`)
 2. `treasury_controller`: test wallet B (`0xf96Cf822F9f4e76956AB9fAAa22B3BdCD7b10aD6`)
