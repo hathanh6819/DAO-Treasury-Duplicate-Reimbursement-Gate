@@ -2,7 +2,7 @@
 
 A contract-only GenLayer gate for one narrow treasury problem: the same DAO vendor billing substantially the same work twice under changed invoice numbers, wording, payment token, beneficiary, amount or service period.
 
-The original v1 Studionet deployment is documented in [historical live evidence](docs/studionet-evidence.md). Version 2 adds mandatory reassessment of previously `CLEAR`, unconsumed claims. A fresh Studionet deployment and v2 live evidence are required before resubmission.
+The original v1 Studionet deployment is documented in [historical live evidence](docs/studionet-evidence.md). Version 2 adds mandatory reassessment of previously `CLEAR`, unconsumed claims and is deployed at [`0xF6cF...c477`](https://explorer-studio.genlayer.com/address/0xF6cF059A3bFa4e8F8B01Db976387f32324DBc477). Reviewer-path, multi-arrival and revocation proofs are in [v2 live evidence](docs/studionet-v2-evidence.md).
 
 For a reviewer-focused description of the defect, fix, automated proof and outstanding live evidence, see [RESUBMISSION.md](RESUBMISSION.md).
 

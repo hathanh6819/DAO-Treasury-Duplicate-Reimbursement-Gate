@@ -54,4 +54,4 @@ a62ec2336f80239778ed5ab9dc29029f526faeed3fc09b393cd8d6d939b5e4ee
 
 ## Deployment evidence
 
-The original version 1 deployment is historical evidence only and does not prove this fix. The matching version 2 source must be deployed on Studionet, and the live transaction matrix in [`docs/studionet-v2-evidence.md`](docs/studionet-v2-evidence.md) must be completed before resubmission.
+The original version 1 deployment is historical evidence only. The matching version 2 source is deployed on Studionet at [`0xF6cF059A3bFa4e8F8B01Db976387f32324DBc477`](https://explorer-studio.genlayer.com/address/0xF6cF059A3bFa4e8F8B01Db976387f32324DBc477). Completed reviewer-path, multi-arrival and duplicate-revocation evidence is linked in [`docs/studionet-v2-evidence.md`](docs/studionet-v2-evidence.md).
